@@ -24,15 +24,15 @@ const AnalysisResults = ({ results, isLoading }) => {
           <h3>Patient Information</h3>
           <div className="result-item">
             <span>Name:</span>
-            <p>{results.patientName || 'N/A'}</p>
+            <p>{results.patientName}</p>
           </div>
           <div className="result-item">
-            <span>Age:</span>
-            <p>{results.patientAge || 'N/A'}</p>
+            <span>Patient Number:</span>
+            <p>{results.patientNumber}</p>
           </div>
           <div className="result-item">
-            <span>Gender:</span>
-            <p>{results.patientGender || 'N/A'}</p>
+            <span>Address:</span>
+            <p>{results.patientAddress}</p>
           </div>
         </div>
         
@@ -40,11 +40,11 @@ const AnalysisResults = ({ results, isLoading }) => {
           <h3>Medical Information</h3>
           <div className="result-item">
             <span>Diagnosis:</span>
-            <p>{results.diagnosis || 'N/A'}</p>
+            <p>{results.diagnosis}</p>
           </div>
           <div className="result-item">
             <span>Treatment:</span>
-            <p>{results.treatment || 'N/A'}</p>
+            <p>{results.treatment}</p>
           </div>
           {results.medication && results.medication.length > 0 && (
             <div className="result-item">
@@ -69,12 +69,24 @@ const AnalysisResults = ({ results, isLoading }) => {
           {results.missingValues && Object.keys(results.missingValues).length > 0 ? (
             <ul>
               {Object.entries(results.missingValues).map(([key, value], index) => (
-                <li key={index}>{key}: {value}</li>
+                <li key={index}>{key.replace(/_/g, ' ')}: {value}</li>
               ))}
             </ul>
           ) : (
             <p>No missing values detected</p>
           )}
+        </div>
+        
+        <div className="result-card">
+          <h3>Medication Analysis</h3>
+          <div className="result-item">
+            <span>Medications Found:</span>
+            <p>{results.medication ? results.medication.length : 0}</p>
+          </div>
+          <div className="result-item">
+            <span>Medication Documentation:</span>
+            <p>{results.medication && results.medication.length > 0 ? 'Complete' : 'Incomplete'}</p>
+          </div>
         </div>
       </div>
     </div>

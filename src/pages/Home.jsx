@@ -3,16 +3,22 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import FileUploader from '../components/FileUploader';
 import AnalysisResults from '../components/AnalysisResults';
+import MedicationAnalysis from '../components/MedicationAnalysis';
+import { processPDF } from '../services/api';
 import '../styles/Home.css';
 
 const Home = () => {
   const [file, setFile] = useState(null);
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [medications, setMedications] = useState(null);
+  const [dosageResults, setDosageResults] = useState(null);
 
   const handleFileUpload = (uploadedFile) => {
     setFile(uploadedFile);
     setResults(null); // Reset results when new file is uploaded
+    setMedications(null);
+    setDosageResults(null);
   };
 
   const analyzeFile = async () => {
@@ -20,27 +26,55 @@ const Home = () => {
     
     setIsLoading(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      // Mock results
-      const mockResults = {
-        patientName: "John Doe",
-        patientAge: "45",
-        patientGender: "Male",
-        diagnosis: "Sample diagnosis of chronic condition requiring follow-up",
-        treatment: "Prescribed medication and physical therapy",
-        medication: ["Ibuprofen 400mg", "Vitamin D", "Calcium supplement"],
-        followUp: "2 weeks with primary physician",
-        missingValues: {
-          allergyInfo: "Missing",
-          insuranceDetails: "Missing",
-          emergencyContact: "Missing"
-        }
+    try {
+      const data = await processPDF(file);
+      
+      // Transform the API response into the format expected by AnalysisResults
+      const transformedResults = {
+        patientName: data.extracted_medications.patient_info.name.present ? 
+          "Present" : "Missing",
+        patientNumber: data.extracted_medications.patient_info.patient_number.present ? 
+          "Present" : "Missing",
+        patientAddress: data.extracted_medications.patient_info.address.present ? 
+          "Present" : "Missing",
+        diagnosis: data.extracted_medications.field_presence.diagnoses.present ? 
+          data.extracted_medications.field_presence.diagnoses.remark : "Missing",
+        treatment: data.extracted_medications.field_presence.operative_procedure.present ? 
+          data.extracted_medications.field_presence.operative_procedure.remark : "Missing",
+        medication: data.extracted_medications.prescribed_medications.map(med => 
+          `${med.name} ${med.strength} ${med.route || ''} ${med.frequency || ''} for ${med.duration}`
+        ),
+        followUp: data.extracted_medications.field_presence.followup.present ? 
+          "Present" : "Missing",
+        missingValues: {}
       };
       
-      setResults(mockResults);
+      // Add missing values
+      for (const [key, value] of Object.entries(data.extracted_medications.patient_info)) {
+        if (!value.present) {
+          transformedResults.missingValues[key] = "Missing";
+        }
+      }
+      
+      for (const [key, value] of Object.entries(data.extracted_medications.clinical_history)) {
+        if (!value.present) {
+          transformedResults.missingValues[key] = "Missing";
+        }
+      }
+      
+      setResults(transformedResults);
+      setMedications(data.extracted_medications.prescribed_medications);
+      
+      // Set the dosage check results
+      if (data.dosage_check_results && data.dosage_check_results.medications_analysis) {
+        setDosageResults(data.dosage_check_results.medications_analysis);
+      }
+    } catch (error) {
+      console.error('Error analyzing file:', error);
+      alert('Error analyzing file. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -116,6 +150,12 @@ const Home = () => {
       
       {(isLoading || results) && (
         <AnalysisResults results={results} isLoading={isLoading} />
+      )}
+      
+      {medications && !isLoading && (
+        <div className="medication-section">
+          <MedicationAnalysis medications={medications} dosageResults={dosageResults} />
+        </div>
       )}
     </div>
   );

@@ -1,29 +1,30 @@
-// services/api.js
+// api.jsx
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 
-const api = axios.create({
-  baseURL: API_URL,
-});
-
-export const uploadAndAnalyzeDocument = async (file) => {
+export const processPDF = async (file) => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('pdf', file);
   
   try {
-    const response = await api.post('/analyze-discharge', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await axios.post(
+      `${API_URL}/process_pdf/`,
+      formData,
+      {
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
     return response.data;
   } catch (error) {
-    console.error('Error analyzing document:', error);
+    console.error('Error processing PDF:', error);
     throw error;
   }
 };
 
 export default {
-  uploadAndAnalyzeDocument,
+  processPDF,
 };
