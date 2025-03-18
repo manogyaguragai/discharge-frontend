@@ -1,0 +1,7 @@
+/* styles/App.css */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.6s ease-out;
+}
